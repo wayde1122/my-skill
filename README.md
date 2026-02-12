@@ -8,6 +8,7 @@
 |-------|------|
 | [github-knowledge-base](./github-knowledge-base/) | 通过 gh CLI 搜索 GitHub 仓库/Issues/PRs，并管理本地代码知识库 |
 | [skill-validator](./skill-validator/) | 检查 Skill 是否符合 Anthropic 官方最佳实践，自动化结构检查 + AI 内容审查 |
+| [formatting-nanobot-output](./formatting-nanobot-output/) | 美化 nanobot 回复输出格式，使用结构化排版和符号标记，适配 QQ/Telegram 等平台 |
 
 ## 安装
 
@@ -22,6 +23,7 @@ git clone https://github.com/wayde1122/my-skill.git
 # 复制到 Cursor Skills 目录
 cp -r my-skill/github-knowledge-base ~/.cursor/skills/
 cp -r my-skill/skill-validator ~/.cursor/skills/
+cp -r my-skill/formatting-nanobot-output ~/.cursor/skills/
 ```
 
 ### Claude Code
@@ -29,6 +31,7 @@ cp -r my-skill/skill-validator ~/.cursor/skills/
 ```bash
 cp -r my-skill/github-knowledge-base ~/.claude/skills/
 cp -r my-skill/skill-validator ~/.claude/skills/
+cp -r my-skill/formatting-nanobot-output ~/.claude/skills/
 ```
 
 安装后无需额外配置，Agent 会在对话中自动发现并使用。
@@ -78,6 +81,25 @@ cp -r my-skill/skill-validator ~/.claude/skills/
    综合两部分结果，按三级分类输出：通过 / 建议改进 / 必须修复。
 
 **前置要求**：Python 3.8+（无第三方依赖）。
+
+### formatting-nanobot-output
+
+美化 [nanobot](https://github.com/HKUDS/nanobot) 的回复输出格式，适配 QQ、Telegram、Discord 等聊天平台。
+
+**触发方式**：当需要让 nanobot 回复更美观、更易读时自动触发。
+
+**主要功能**：
+- 使用全角符号（`【】`、`▎`、`◆`）替代 Markdown 标题，兼容不渲染 Markdown 的平台
+- 提供 5 种回复模板：问答、步骤、对比、代码、摘要
+- 按平台特性适配输出格式（QQ 纯文本符号 / Telegram 混合 / Discord 完整 Markdown）
+
+**部署到 nanobot**：
+```bash
+cp SKILL.md ~/.nanobot/skills/pretty-output.md
+pkill -f nanobot && nanobot gateway
+```
+
+**前置要求**：已安装并运行 [nanobot](https://github.com/HKUDS/nanobot)。
 
 ---
 
