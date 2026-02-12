@@ -52,7 +52,7 @@ cp -r my-skill/skill-validator ~/.claude/skills/
 
 ### skill-validator
 
-检查任意 Skill 是否符合 [Anthropic 官方最佳实践](https://platform.claude.com/docs/agents-and-tools/agent-skills/best-practices)。
+检查任意 Skill 是否符合 [Anthropic 官方最佳实践](https://platform.claude.com/docs/zh-CN/agents-and-tools/agent-skills/best-practices)。
 
 **触发方式**：当你要求"检查/验证/审查某个 Skill"时自动触发。
 
@@ -83,7 +83,7 @@ cp -r my-skill/skill-validator ~/.claude/skills/
 
 ## 什么是 Agent Skills
 
-Agent Skills 是 Anthropic 定义的模块化能力扩展机制，通过 `SKILL.md` 文件为 AI Agent 提供专业领域知识、工作流和工具。详见 [官方文档](https://platform.claude.com/docs/agents-and-tools/agent-skills/overview)。
+Agent Skills 是 Anthropic 定义的模块化能力扩展机制，通过 `SKILL.md` 文件为 AI Agent 提供专业领域知识、工作流和工具。详见 [官方文档](https://platform.claude.com/docs/zh-CN/agents-and-tools/agent-skills/overview)。
 
 ## License
 

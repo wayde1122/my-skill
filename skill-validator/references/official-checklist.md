@@ -1,6 +1,6 @@
 # Skill 最佳实践完整检查清单
 
-基于 Anthropic 官方文档: https://platform.claude.com/docs/agents-and-tools/agent-skills/best-practices
+基于 Anthropic 官方文档: https://platform.claude.com/docs/zh-CN/agents-and-tools/agent-skills/best-practices
 
 ---
 
