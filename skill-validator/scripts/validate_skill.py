@@ -41,6 +41,51 @@ TOC_PATTERNS = [
     re.compile(r"^-\s+\[.+\]\(#.+\)", re.IGNORECASE | re.MULTILINE),  # markdown TOC 链接格式
 ]
 
+# ── 安全检查相关常量 ─────────────────────────────────────────────────
+
+# 硬编码凭据的正则模式（排除代码块内的占位符）
+SECRET_PATTERNS = [
+    # API Key 前缀
+    (re.compile(r"""(?:api[_-]?key|apikey)\s*[:=]\s*["'](?!YOUR_|<|xxx|dummy|test|example)[A-Za-z0-9\-_./]{16,}["']""", re.IGNORECASE), "API Key"),
+    # sk- 开头的密钥（OpenAI 等）
+    (re.compile(r"""\bsk-[A-Za-z0-9]{20,}\b"""), "sk-* 密钥"),
+    # Bearer Token
+    (re.compile(r"""Bearer\s+[A-Za-z0-9\-_.]{20,}"""), "Bearer Token"),
+    # 通用 token/secret/password 赋值
+    (re.compile(r"""(?:token|secret|password)\s*[:=]\s*["'](?!YOUR_|<|xxx|dummy|test|example|\*)[A-Za-z0-9\-_./]{12,}["']""", re.IGNORECASE), "Token/Secret/Password"),
+    # AWS Key
+    (re.compile(r"""\bAKIA[0-9A-Z]{16}\b"""), "AWS Access Key"),
+    # GitHub Token
+    (re.compile(r"""\bghp_[A-Za-z0-9]{36}\b"""), "GitHub Token"),
+    (re.compile(r"""\bgho_[A-Za-z0-9]{36}\b"""), "GitHub OAuth Token"),
+]
+
+# 危险命令模式
+DANGEROUS_CMD_PATTERNS = [
+    (re.compile(r"""\brm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+/(?:\s|$|")"""), "rm -rf / (删除根目录)"),
+    (re.compile(r"""\bchmod\s+777\b"""), "chmod 777 (过度开放权限)"),
+    (re.compile(r"""\bcurl\s+.*\|\s*(?:ba)?sh\b"""), "curl | bash (远程代码执行)"),
+    (re.compile(r"""\bwget\s+.*\|\s*(?:ba)?sh\b"""), "wget | bash (远程代码执行)"),
+    (re.compile(r"""\beval\s*\("""), "eval() (任意代码执行)"),
+    (re.compile(r""">\s*/dev/sd[a-z]"""), "> /dev/sdX (覆写磁盘)"),
+    (re.compile(r"""\bmkfs\."""), "mkfs (格式化磁盘)"),
+    (re.compile(r"""\bdd\s+if=.*of=/dev/"""), "dd 写入设备"),
+]
+
+# HTTP 明文 URL 模式（排除 localhost 和 127.0.0.1）
+HTTP_URL_PATTERN = re.compile(r"""http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0|example\.com|例)[^\s"')\]>]+""", re.IGNORECASE)
+
+# 敏感路径模式
+SENSITIVE_PATH_PATTERNS = [
+    (re.compile(r"""/etc/(?:passwd|shadow|sudoers)"""), "/etc/ 系统敏感文件"),
+    (re.compile(r"""~/\.ssh/"""), "~/.ssh/ SSH 密钥目录"),
+    (re.compile(r"""~/\.aws/"""), "~/.aws/ AWS 凭据目录"),
+    (re.compile(r"""~/\.gnupg/"""), "~/.gnupg/ GPG 密钥目录"),
+    (re.compile(r"""(?:^|\s)\.env(?:\s|$|\.)"""), ".env 环境变量文件"),
+    (re.compile(r"""credentials\.json"""), "credentials.json 凭据文件"),
+    (re.compile(r"""id_rsa|id_ed25519"""), "SSH 私钥文件"),
+]
+
 
 # ── 检查结果 ─────────────────────────────────────────────────────────
 
@@ -339,6 +384,100 @@ def check_extra_frontmatter_fields(frontmatter: dict) -> CheckResult:
     return CheckResult("extra_fields", CheckResult.PASS, "frontmatter 字段符合规范")
 
 
+# ── 安全检查函数 ─────────────────────────────────────────────────────
+
+def _iter_non_code_lines(content: str):
+    """迭代非代码块内的行，返回 (行号, 行内容)"""
+    in_code_block = False
+    for line_num, line in enumerate(content.split("\n"), 1):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        if not in_code_block:
+            yield line_num, line
+
+
+def _iter_all_lines(content: str):
+    """迭代所有行（含代码块），返回 (行号, 行内容)"""
+    for line_num, line in enumerate(content.split("\n"), 1):
+        yield line_num, line
+
+
+def _scan_files(skill_dir: Path, patterns, check_code_blocks=True):
+    """扫描 skill 目录下所有文件，返回匹配列表 [(文件, 行号, 类型)]"""
+    hits = []
+    for file_path in skill_dir.rglob("*"):
+        if file_path.is_dir() or file_path.suffix not in (".md", ".py", ".sh", ".js", ".ts"):
+            continue
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        line_iter = _iter_all_lines(content) if check_code_blocks else _iter_non_code_lines(content)
+        for line_num, line in line_iter:
+            for pattern, desc in patterns:
+                if pattern.search(line):
+                    rel = file_path.relative_to(skill_dir)
+                    hits.append((str(rel), line_num, desc))
+    return hits
+
+
+def check_hardcoded_secrets(skill_dir: Path) -> CheckResult:
+    """检查是否存在硬编码的凭据/密钥"""
+    hits = _scan_files(skill_dir, SECRET_PATTERNS, check_code_blocks=True)
+    if hits:
+        detail = "; ".join(f"{f}:{ln} ({t})" for f, ln, t in hits[:5])
+        suffix = f" (共 {len(hits)} 处)" if len(hits) > 5 else ""
+        return CheckResult("hardcoded_secrets", CheckResult.ERROR,
+                           f"发现疑似硬编码凭据: {detail}{suffix}")
+    return CheckResult("hardcoded_secrets", CheckResult.PASS, "未发现硬编码凭据")
+
+
+def check_dangerous_commands(skill_dir: Path) -> CheckResult:
+    """检查是否存在危险 shell 命令"""
+    hits = _scan_files(skill_dir, DANGEROUS_CMD_PATTERNS, check_code_blocks=True)
+    if hits:
+        detail = "; ".join(f"{f}:{ln} ({t})" for f, ln, t in hits[:5])
+        suffix = f" (共 {len(hits)} 处)" if len(hits) > 5 else ""
+        return CheckResult("dangerous_commands", CheckResult.WARN,
+                           f"发现危险命令: {detail}{suffix}")
+    return CheckResult("dangerous_commands", CheckResult.PASS, "未发现危险命令")
+
+
+def check_http_urls(skill_dir: Path) -> CheckResult:
+    """检查是否存在 HTTP 明文 URL"""
+    hits = []
+    for file_path in skill_dir.rglob("*.md"):
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for line_num, line in _iter_non_code_lines(content):
+            matches = HTTP_URL_PATTERN.findall(line)
+            for m in matches:
+                rel = file_path.relative_to(skill_dir)
+                hits.append((str(rel), line_num, f"http://{m[:40]}"))
+    if hits:
+        detail = "; ".join(f"{f}:{ln}" for f, ln, _ in hits[:5])
+        suffix = f" (共 {len(hits)} 处)" if len(hits) > 5 else ""
+        return CheckResult("http_urls", CheckResult.WARN,
+                           f"发现 HTTP 明文 URL (建议使用 HTTPS): {detail}{suffix}")
+    return CheckResult("http_urls", CheckResult.PASS, "所有外部 URL 均使用 HTTPS")
+
+
+def check_sensitive_paths(skill_dir: Path) -> CheckResult:
+    """检查是否引用了系统敏感路径"""
+    hits = _scan_files(skill_dir, SENSITIVE_PATH_PATTERNS, check_code_blocks=True)
+    if hits:
+        detail = "; ".join(f"{f}:{ln} ({t})" for f, ln, t in hits[:5])
+        suffix = f" (共 {len(hits)} 处)" if len(hits) > 5 else ""
+        return CheckResult("sensitive_paths", CheckResult.WARN,
+                           f"发现敏感路径引用: {detail}{suffix}")
+    return CheckResult("sensitive_paths", CheckResult.PASS, "未发现敏感路径引用")
+
+
 # ── 主流程 ───────────────────────────────────────────────────────────
 
 def validate_skill(skill_dir: Path) -> dict:
@@ -391,6 +530,12 @@ def validate_skill(skill_dir: Path) -> dict:
 
     # 15. frontmatter 额外字段
     results.append(check_extra_frontmatter_fields(frontmatter))
+
+    # 16-19. 安全检查
+    results.append(check_hardcoded_secrets(skill_dir))
+    results.append(check_dangerous_commands(skill_dir))
+    results.append(check_http_urls(skill_dir))
+    results.append(check_sensitive_paths(skill_dir))
 
     skill_name = frontmatter.get("name", "unknown")
     return _build_report(skill_dir, skill_name, results)

@@ -32,13 +32,13 @@ python scripts/validate_skill.py <skill目录路径>
 python scripts/validate_skill.py <skill目录路径> --format json
 ```
 
-脚本检查 15 项硬性规则：SKILL.md 存在性、name/description 字段格式、正文行数、多余文件、Windows 路径、引用深度等。
+脚本检查 19 项规则：SKILL.md 存在性、name/description 字段格式、正文行数、多余文件、Windows 路径、引用深度，以及 4 项安全检查（硬编码凭据、危险命令、HTTP 明文 URL、敏感路径引用）。
 
 记录脚本输出，继续步骤 2。
 
 ### 步骤 2：AI 内容质量审查
 
-读取目标 Skill 的 SKILL.md 全文，逐项执行以下 6 项语义检查：
+读取目标 Skill 的 SKILL.md 全文，逐项执行以下 8 项语义检查：
 
 **检查 A：description 质量**
 
@@ -75,6 +75,21 @@ python scripts/validate_skill.py <skill目录路径> --format json
 - 是否有清晰的步骤分解
 - 关键操作是否有验证/反馈循环
 
+**检查 G：信息安全（凭据与命令）**
+
+审查是否存在脚本自动检查可能遗漏的安全隐患：
+- 是否有变形/拼接方式隐藏的凭据（如分段拼接 API Key）
+- 脚本中的用户输入是否经过转义/验证（防注入）
+- 涉及文件操作的路径是否做了遍历防护（防 `../` 攻击）
+- 外部依赖是否来自可信源，版本是否锁定
+
+**检查 H：权限最小化**
+
+审查 Skill 是否遵循最小权限原则：
+- 是否请求了超出功能所需的系统权限
+- 文件操作是否限定在工作目录范围内
+- 网络请求是否限定在必要的域名范围内
+
 详细检查标准参阅 [references/official-checklist.md](references/official-checklist.md)。
 
 ### 步骤 3：输出综合报告
@@ -94,6 +109,8 @@ python scripts/validate_skill.py <skill目录路径> --format json
 - [状态] 检查 D - 时间敏感信息: [具体说明]
 - [状态] 检查 E - 示例质量: [具体说明]
 - [状态] 检查 F - 工作流与反馈循环: [具体说明]
+- [状态] 检查 G - 信息安全（凭据与命令）: [具体说明]
+- [状态] 检查 H - 权限最小化: [具体说明]
 
 ## 总结
 通过: X | 警告: X | 必须修复: X
