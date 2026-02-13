@@ -61,7 +61,7 @@ cp -r my-skill/formatting-nanobot-output ~/.claude/skills/
 
 **验证流程**：
 
-1. **脚本自动检查**（15 项结构性规则）
+1. **脚本自动检查**（19 项规则）
 
    ```bash
    python scripts/validate_skill.py <skill目录路径>
@@ -70,11 +70,25 @@ cp -r my-skill/formatting-nanobot-output ~/.claude/skills/
    python scripts/validate_skill.py <skill目录路径> --format json
    ```
 
-   检查项包括：SKILL.md 存在性、name/description 格式、正文行数、多余文件、Windows 路径、引用深度等。
+   检查项包括：
 
-2. **AI 内容审查**（6 项语义检查）
+   | 类别 | 检查项 |
+   |------|--------|
+   | 结构规范 | SKILL.md 存在性、name/description 格式、正文行数、多余文件、Windows 路径、引用深度等 (15 项) |
+   | 信息安全 | 硬编码凭据、危险命令、HTTP 明文 URL、敏感路径引用 (4 项) |
 
-   description 质量、内容简洁性、术语一致性、时间敏感信息、示例质量、工作流反馈循环。
+2. **AI 内容审查**（8 项语义检查）
+
+   | 检查项 | 说明 |
+   |--------|------|
+   | A. description 质量 | 第三人称、WHAT + WHEN、触发关键词 |
+   | B. 内容简洁性 | 不含通用知识、优先示例 |
+   | C. 术语一致性 | 不混用同义词 |
+   | D. 时间敏感信息 | 无过期日期性表述 |
+   | E. 示例质量 | 具体输入/输出对 |
+   | F. 工作流与反馈循环 | 步骤分解、验证环节 |
+   | G. 信息安全 | 凭据变形、输入注入、路径遍历 |
+   | H. 权限最小化 | 最小权限原则 |
 
 3. **输出分级报告**
 
