@@ -1,6 +1,6 @@
 # My Skills
 
-一组自定义的 [Cursor](https://www.cursor.com/) / [Claude Code](https://code.claude.com/) Agent Skills，用于扩展 AI 的专业能力。
+一组自定义的 [Cursor](https://www.cursor.com/) / [Claude Code](https://code.claude.com/) / Codex Agent Skills，用于扩展 AI 的专业能力。
 
 ## 包含的 Skills
 
@@ -9,6 +9,7 @@
 | [github-knowledge-base](./github-knowledge-base/) | 通过 gh CLI 搜索 GitHub 仓库/Issues/PRs，并管理本地代码知识库 |
 | [skill-validator](./skill-validator/) | 检查 Skill 是否符合 Anthropic 官方最佳实践，自动化结构检查 + AI 内容审查 |
 | [formatting-nanobot-output](./formatting-nanobot-output/) | 美化 nanobot 回复输出格式，使用结构化排版和符号标记，适配 QQ/Telegram 等平台 |
+| [codex-multi-agent-delivery](./codex-multi-agent-delivery/) | 编排 Codex 多 Agent 自动化编码、审查、PR 与交付工作流 |
 
 ## 安装
 
@@ -32,6 +33,12 @@ cp -r my-skill/formatting-nanobot-output ~/.cursor/skills/
 cp -r my-skill/github-knowledge-base ~/.claude/skills/
 cp -r my-skill/skill-validator ~/.claude/skills/
 cp -r my-skill/formatting-nanobot-output ~/.claude/skills/
+```
+
+### Codex
+
+```bash
+cp -r my-skill/codex-multi-agent-delivery ~/.codex/skills/
 ```
 
 安装后无需额外配置，Agent 会在对话中自动发现并使用。
@@ -114,6 +121,19 @@ pkill -f nanobot && nanobot gateway
 ```
 
 **前置要求**：已安装并运行 [nanobot](https://github.com/HKUDS/nanobot)。
+
+### codex-multi-agent-delivery
+
+把 Codex 的多 Agent 协作和自动化底座结合起来，形成一套可控的编码交付工作流。
+
+**触发方式**：当你要求设计或执行多 Agent coding workflow、复杂功能开发、跨文件改动、PR 审查、发布前把关、或把单 Agent 任务升级为多 Agent 流水线时自动触发。
+
+**主要功能**：
+- 统一 `orchestrator / planner / explorer / docs_researcher / implementer / reviewer / release_guard` 的角色分工
+- 规定 `reviewer -> implementer`、`release_guard -> orchestrator` 等标准回流路径
+- 把 `AGENTS.md`、`.codex/config.toml`、hooks、MCP、CI 纳入同一条交付链路
+
+**适用前提**：仓库最好已经具备统一的验证命令和基础项目规则。
 
 ---
 

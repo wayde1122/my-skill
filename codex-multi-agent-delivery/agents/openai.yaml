@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Multi-Agent Delivery"
+  short_description: "Codex multi-agent coding, review, and release workflow"
+  default_prompt: "Use $codex-multi-agent-delivery to plan and run a Codex multi-agent delivery workflow for this task."
