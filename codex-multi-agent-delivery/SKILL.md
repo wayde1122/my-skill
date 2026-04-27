@@ -1,6 +1,6 @@
 ---
 name: codex-multi-agent-delivery
-description: 编排 Codex 的多 agent 自动化编码与交付流程，结合 AGENTS.md、.codex/config.toml、hooks、skills、MCP、CI 和 subagents，把复杂任务拆成 orchestrator、planner、explorer、docs_researcher、implementer、reviewer、release_guard 等角色协作。当用户需要设计或执行多 agent coding workflow、复杂功能开发、跨文件改动、PR 审查、发布前把关、或把单 agent 任务升级为可控多 agent 流水线时使用。
+description: 编排 Codex 的多 agent 自动化编码与交付流程，结合 AGENTS.md、.codex/config.toml、hooks、skills、MCP、CI 和 subagents，把复杂任务拆成 orchestrator、planner、explorer、docs_researcher、implementer、reviewer、release_guard 等角色协作。当用户需要设计或执行多 agent coding workflow、复杂功能开发、跨文件改动、PR 审查、发布前把关、把单 agent 任务升级为可控多 agent 流水线，或初始化当前仓库以接入这套工作流时使用。
 ---
 
 # Codex Multi-Agent Delivery
@@ -19,6 +19,12 @@ description: 编排 Codex 的多 agent 自动化编码与交付流程，结合 A
 
 `planner -> implementer -> reviewer`
 
+如果目标仓库还没有这套工作流的基础文件，先运行初始化脚本：
+
+```bash
+python scripts/add_current_repo.py
+```
+
 ## 先加载底座
 
 开始前先确认这几个约束是否存在：
@@ -29,6 +35,20 @@ description: 编排 Codex 的多 agent 自动化编码与交付流程，结合 A
 - `hooks`、`CI`、`MCP` 中与任务直接相关的部分
 
 如果这些基础约束缺失，不要直接进入“多 agent 并发改代码”。先指出缺口，并给出最小可执行方案。
+
+优先使用仓库内的初始化脚本一次性补齐 Codex 侧骨架：
+
+```bash
+python scripts/add_current_repo.py --target <repo-path>
+```
+
+这个脚本默认生成：
+
+- `AGENTS.md`
+- `.codex/config.toml`
+- `.codex/agents/*.toml`
+
+它默认不覆盖现有文件；需要覆盖时显式传 `--force`。
 
 详细约束见：
 
@@ -93,6 +113,19 @@ description: 编排 Codex 的多 agent 自动化编码与交付流程，结合 A
 - 验证结果
 - 剩余风险
 - 如果被 reviewer 或 release_guard 拦回，说明拦回原因
+
+## 附带脚本
+
+这份 skill 附带一个确定性脚本，用于把当前仓库接入这套 Codex 工作流：
+
+- `scripts/add_current_repo.py`
+
+适用场景：
+
+- 当前仓库还没有 `AGENTS.md`
+- 当前仓库还没有 `.codex/config.toml`
+- 想快速生成一套标准 `agents/*.toml`
+- 想先把仓库变成“可供多 agent 编排”的状态，再开始交付
 
 ## 参考资料
 

@@ -126,14 +126,55 @@ pkill -f nanobot && nanobot gateway
 
 把 Codex 的多 Agent 协作和自动化底座结合起来，形成一套可控的编码交付工作流。
 
-**触发方式**：当你要求设计或执行多 Agent coding workflow、复杂功能开发、跨文件改动、PR 审查、发布前把关、或把单 Agent 任务升级为多 Agent 流水线时自动触发。
+**触发方式**：当你要求设计或执行多 Agent coding workflow、复杂功能开发、跨文件改动、PR 审查、发布前把关、把单 Agent 任务升级为多 Agent 流水线、或初始化当前仓库以接入这套流程时自动触发。
 
 **主要功能**：
 - 统一 `orchestrator / planner / explorer / docs_researcher / implementer / reviewer / release_guard` 的角色分工
 - 规定 `reviewer -> implementer`、`release_guard -> orchestrator` 等标准回流路径
 - 把 `AGENTS.md`、`.codex/config.toml`、hooks、MCP、CI 纳入同一条交付链路
+- 提供脚本为当前仓库生成最小可用的 Codex 多 Agent 骨架
 
 **适用前提**：仓库最好已经具备统一的验证命令和基础项目规则。
+
+**初始化当前仓库**：
+
+如果你想把“当前仓库”快速接入这套工作流，可以运行：
+
+```bash
+# 在目标仓库目录中执行
+python ~/.codex/skills/codex-multi-agent-delivery/scripts/add_current_repo.py
+```
+
+或者直接从本仓库源码运行：
+
+```bash
+python my-skill/codex-multi-agent-delivery/scripts/add_current_repo.py --target /path/to/repo
+```
+
+脚本默认会添加：
+
+- `AGENTS.md`
+- `.codex/config.toml`
+- `.codex/agents/planner.toml`
+- `.codex/agents/explorer.toml`
+- `.codex/agents/docs-researcher.toml`
+- `.codex/agents/implementer.toml`
+- `.codex/agents/reviewer.toml`
+- `.codex/agents/release-guard.toml`
+
+默认不会覆盖已有文件。需要覆盖时显式传入：
+
+```bash
+python ~/.codex/skills/codex-multi-agent-delivery/scripts/add_current_repo.py --force
+```
+
+如果你还想同时放一个 hooks 占位模板：
+
+```bash
+python ~/.codex/skills/codex-multi-agent-delivery/scripts/add_current_repo.py --include-hooks-template
+```
+
+初始化完成后，记得把 `AGENTS.md` 里的验证命令占位符替换成你仓库自己的 `lint / test / build` 命令。
 
 ---
 
